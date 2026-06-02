@@ -1,0 +1,144 @@
+-- ============================================
+-- БАЗА ДАННЫХ: Стройматериалы (Вариант 3)
+-- ============================================
+
+CREATE DATABASE IF NOT EXISTS dem
+CHARACTER SET utf8
+COLLATE utf8_general_ci;
+
+USE dem;
+
+-- ============================================
+-- 1. РОЛИ
+-- ============================================
+CREATE TABLE user_roles (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    role VARCHAR(23) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO user_roles (role_id, role) VALUES
+(1, 'Администратор'),
+(2, 'Менеджер'),
+(3, 'Авторизированный клиент');
+
+-- ============================================
+-- 2. ФИО ПОЛЬЗОВАТЕЛЕЙ
+-- ============================================
+CREATE TABLE user_fio (
+    fio_id INT AUTO_INCREMENT PRIMARY KEY,
+    fio VARCHAR(29) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 3. ПОЛЬЗОВАТЕЛИ
+-- ============================================
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    role INT NOT NULL,
+    fio INT NOT NULL,
+    login VARCHAR(21) NOT NULL UNIQUE,
+    password VARCHAR(6) NOT NULL,
+    FOREIGN KEY (role) REFERENCES user_roles(role_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (fio) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 4. КАТЕГОРИИ
+-- ============================================
+CREATE TABLE categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 5. ПРОИЗВОДИТЕЛИ
+-- ============================================
+CREATE TABLE manufacturers (
+    manufacturer_id INT AUTO_INCREMENT PRIMARY KEY,
+    manufacturer_name VARCHAR(16) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 6. ПОСТАВЩИКИ
+-- ============================================
+CREATE TABLE suppliers (
+    supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(17) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 7. ЕДИНИЦЫ ИЗМЕРЕНИЯ
+-- ============================================
+CREATE TABLE unit (
+    unit_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(3) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO unit (unit_id, name) VALUES (1, 'шт.');
+
+-- ============================================
+-- 8. НАЗВАНИЯ ТОВАРОВ (справочник)
+-- ============================================
+CREATE TABLE products (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(38) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 9. ТОВАРЫ (главная таблица)
+-- ============================================
+CREATE TABLE tovar (
+    article VARCHAR(6) NOT NULL PRIMARY KEY,
+    product_id INT NOT NULL,
+    unit_id INT NOT NULL DEFAULT 1,
+    price INT NOT NULL,
+    supplier_id INT NOT NULL,
+    manufacturer_id INT NOT NULL,
+    category_id INT NOT NULL,
+    discount INT DEFAULT 0,
+    stock_quantity INT DEFAULT 0,
+    description VARCHAR(107),
+    image_path VARCHAR(10),
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (unit_id) REFERENCES unit(unit_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(manufacturer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 10. СТАТУСЫ ЗАКАЗОВ
+-- ============================================
+CREATE TABLE order_status (
+    status_id INT AUTO_INCREMENT PRIMARY KEY,
+    status_name VARCHAR(8) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO order_status (status_id, status_name) VALUES
+(1, 'Завершен'),
+(2, 'Новый');
+
+-- ============================================
+-- 11. ПУНКТЫ ВЫДАЧИ
+-- ============================================
+CREATE TABLE pvz (
+    pvz_id INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(43) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ============================================
+-- 12. ЗАКАЗЫ
+-- ============================================
+CREATE TABLE orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    article_text VARCHAR(23),
+    order_date VARCHAR(10),
+    delivery_date VARCHAR(10),
+    pvz_id INT NOT NULL,
+    client_fio_id INT,
+    pickup_code INT,
+    status_id INT NOT NULL,
+    FOREIGN KEY (pvz_id) REFERENCES pvz(pvz_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (client_fio_id) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (status_id) REFERENCES order_status(status_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
