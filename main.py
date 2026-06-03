@@ -1,10 +1,3 @@
-# ========== ЧТО МЕНЯТЬ ПОД СВОЮ БД ==========
-# 
-# 1. ЦВЕТА — взять из руководства по стилю
-# 2. НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ — везде в SQL-запросах
-# 3. ЗАГОЛОВОК ОКНА — строка с setWindowTitle
-
-
 import sys, os, shutil, uuid
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QColor, QFont, QIcon, QPixmap
@@ -18,11 +11,14 @@ ICON_ICO = os.path.join(RES, "icon.ico")
 ICON_PNG = os.path.join(RES, "icon.png")
 PICTURE = os.path.join(RES, "picture.png")
 os.makedirs(PHOTOS, exist_ok=True)
-# ⬇️ ЦВЕТА — ЗАМЕНИТЬ НА СВОИ
-C_WHITE = "#FFFFFF"    # основной фон (всегда белый)
-C_DISC = "#F4A460"     # скидка >12% (всегда этот)
-C_ZERO = "#ADD8E6"     # нет на складе (может отличаться)
 
+C_WHITE = "#FFFFFF"
+C_SECOND = "#ABCFCE"
+C_ACCENT = "#546F94"
+C_DISC = "#23E1EF"
+C_ZERO = "#BABABA"
+
+# Универсальная функция выполнения SELECT-запроса с возвратом всех строк
 def db_query(sql, params=None):
     conn = get_connection()
     try:
@@ -32,10 +28,12 @@ def db_query(sql, params=None):
     finally:
         conn.close()
 
+# Получение одной строки из БД
 def db_fetch_one(sql, params=None):
     rows = db_query(sql, params)
     return rows[0] if rows else None
 
+# Выполнение INSERT/UPDATE/DELETE запроса
 def db_execute(sql, params=None):
     conn = get_connection()
     try:
@@ -45,8 +43,8 @@ def db_execute(sql, params=None):
     finally:
         conn.close()
 
+# Окно авторизации
 class LoginDialog(QDialog):
-     # ... без изменений ...
     def __init__(self):
         super().__init__()
         self.user_data = None
@@ -74,6 +72,7 @@ class LoginDialog(QDialog):
         b.addWidget(btn2)
         l.addLayout(b)
 
+    # Обработчик входа по логину и паролю
     def on_login(self):
         lg = self.login_edit.text().strip()
         pw = self.pwd_edit.text().strip()
@@ -81,15 +80,14 @@ class LoginDialog(QDialog):
             QMessageBox.warning(self, "Ошибка", "Заполните поля")
             return
         try:
-        #ЗАПРОС ЛОГИНА — ЗАМЕНИТЬ НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ
+            # Запрос на проверку пользователя через JOIN с user_fio и user_roles
             row = db_fetch_one("""
-                SELECT u.user_id, uf.fio, ur.role
+                SELECT u.user_id, uf.name AS fio, ur.name AS role
                 FROM users u
                 JOIN user_fio uf ON u.fio = uf.fio_id
                 JOIN user_roles ur ON u.role = ur.role_id
                 WHERE u.login = %s AND u.password = %s
             """, (lg, pw))
-            # ... дальше без изменений ...
         except Exception as e:
             QMessageBox.critical(self, "Ошибка БД", str(e))
             return
@@ -99,10 +97,12 @@ class LoginDialog(QDialog):
         else:
             QMessageBox.critical(self, "Ошибка", "Неверный логин или пароль")
 
+    # Вход как гость
     def on_guest(self):
         self.user_data = (None, "Гость", "Гость")
         self.accept()
 
+# Форма добавления/редактирования товара
 class ProductEdit(QDialog):
     def __init__(self, article=None):
         super().__init__()
@@ -114,7 +114,6 @@ class ProductEdit(QDialog):
         l = QFormLayout(self)
 
         self.art_edit = QLineEdit()
-        self.name_combo = QComboBox()
         self.cat_combo = QComboBox()
         self.man_combo = QComboBox()
         self.sup_combo = QComboBox()
@@ -123,18 +122,18 @@ class ProductEdit(QDialog):
         self.disc_edit = QLineEdit()
         self.desc_edit = QTextEdit()
         self.desc_edit.setFixedHeight(60)
-        # СПРАВОЧНИКИ ДЛЯ КОМБОБОКСОВ — ЗАМЕНИТЬ НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ
-        for r in db_query("SELECT product_id, name FROM products"):
-            self.name_combo.addItem(r["name"], r["product_id"])
-        for r in db_query("SELECT category_id, category_name FROM categories"):
-            self.cat_combo.addItem(r["category_name"], r["category_id"])
-        for r in db_query("SELECT manufacturer_id, manufacturer_name FROM manufacturers"):
-            self.man_combo.addItem(r["manufacturer_name"], r["manufacturer_id"])
+        self.name_edit = QLineEdit()
+
+        # Загрузка справочников для выпадающих списков
+        for r in db_query("SELECT category_id, name FROM categories"):
+            self.cat_combo.addItem(r["name"], r["category_id"])
+        for r in db_query("SELECT manufacturer_id, name FROM manufacturers"):
+            self.man_combo.addItem(r["name"], r["manufacturer_id"])
         for r in db_query("SELECT supplier_id, name FROM suppliers"):
             self.sup_combo.addItem(r["name"], r["supplier_id"])
 
         l.addRow("Артикул:", self.art_edit)
-        l.addRow("Название:", self.name_combo)
+        l.addRow("Название:", self.name_edit)
         l.addRow("Категория:", self.cat_combo)
         l.addRow("Производитель:", self.man_combo)
         l.addRow("Поставщик:", self.sup_combo)
@@ -159,14 +158,13 @@ class ProductEdit(QDialog):
         if article:
             self.load_data(article)
 
+    # Загрузка данных товара для редактирования
     def load_data(self, article):
-        # ⬇️ ЗАГРУЗКА ТОВАРА — ЗАМЕНИТЬ НАЗВАНИЕ ТАБЛИЦЫ И ПОЛЕЙ
         r = db_fetch_one("SELECT * FROM tovar WHERE article = %s", (article,))
         if not r:
             QMessageBox.critical(self, "Ошибка", "Товар не найден")
             self.reject()
             return
-        # ⬇️ ПОЛЯ ТОВАРА — ЗАМЕНИТЬ НА СВОИ
         self.art_edit.setText(r["article"])
         self.art_edit.setReadOnly(True)
         self.price_edit.setText(str(r["price"] or ""))
@@ -174,9 +172,9 @@ class ProductEdit(QDialog):
         self.disc_edit.setText(str(r["discount"] or ""))
         self.desc_edit.setText(r["description"] or "")
         self.img_path = r["image_path"] or ""
-        # ⬇️ ID для комбобоксов — ЗАМЕНИТЬ НА СВОИ
-        ci = self.name_combo.findData(r["product_id"])
-        if ci >= 0: self.name_combo.setCurrentIndex(ci)
+        self.name_edit.setText(r["name"] or "")
+
+        # Установка выбранных значений в комбобоксах
         ci = self.cat_combo.findData(r["category_id"])
         if ci >= 0: self.cat_combo.setCurrentIndex(ci)
         ci = self.man_combo.findData(r["manufacturer_id"])
@@ -184,10 +182,12 @@ class ProductEdit(QDialog):
         ci = self.sup_combo.findData(r["supplier_id"])
         if ci >= 0: self.sup_combo.setCurrentIndex(ci)
 
+    # Выбор фото товара
     def pick_img(self):
         f, _ = QFileDialog.getOpenFileName(self, "Фото", "", "Images (*.png *.jpg)")
         if f: self.img_path = f
 
+    # Сохранение товара (добавление или обновление)
     def save(self):
         art = self.art_edit.text().strip()
         if not art:
@@ -201,6 +201,7 @@ class ProductEdit(QDialog):
             QMessageBox.warning(self, "Ошибка", "Неверные числа")
             return
 
+        # Копирование фото в папку приложения
         saved = self.img_path
         if self.img_path and os.path.exists(self.img_path):
             ext = os.path.splitext(self.img_path)[1]
@@ -211,42 +212,42 @@ class ProductEdit(QDialog):
             saved = fn
 
         if self.article:
-            # ⬇️ UPDATE — ЗАМЕНИТЬ НАЗВАНИЕ ТАБЛИЦЫ И ВСЕ ПОЛЯ
+            # Обновление существующего товара
             db_execute("""
-                UPDATE tovar SET product_id=%s, category_id=%s, manufacturer_id=%s,
+                UPDATE tovar SET name=%s, category_id=%s, manufacturer_id=%s,
                 supplier_id=%s, description=%s, price=%s, stock_quantity=%s,
                 discount=%s, image_path=%s
                 WHERE article=%s
             """, (
-                self.name_combo.currentData(), self.cat_combo.currentData(),
+                self.name_edit.text(), self.cat_combo.currentData(),
                 self.man_combo.currentData(), self.sup_combo.currentData(),
                 self.desc_edit.toPlainText(), price, stock, disc, saved,
                 self.article
             ))
         else:
-            # ⬇️ INSERT — ЗАМЕНИТЬ НАЗВАНИЕ ТАБЛИЦЫ И ВСЕ ПОЛЯ
+            # Добавление нового товара
             db_execute("""
-                INSERT INTO tovar (article, product_id, category_id, manufacturer_id,
+                INSERT INTO tovar (article, name, category_id, manufacturer_id,
                 supplier_id, description, price, stock_quantity, discount, image_path, unit_id)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
             """, (
-                art, self.name_combo.currentData(), self.cat_combo.currentData(),
+                art, self.name_edit.text(), self.cat_combo.currentData(),
                 self.man_combo.currentData(), self.sup_combo.currentData(),
                 self.desc_edit.toPlainText(), price, stock, disc, saved
             ))
         self.accept()
 
+# Форма добавления/редактирования заказа
 class OrderEdit(QDialog):
     def __init__(self, order_id=None):
         super().__init__()
         self.order_id = order_id
         self.setWindowTitle("Редактировать заказ" if order_id else "Добавить заказ")
-        self.setFixedSize(450, 350)
+        self.setFixedSize(450, 400)
 
         l = QFormLayout(self)
 
         self.num_edit = QLineEdit()
-        self.art_edit = QLineEdit()
         self.status_combo = QComboBox()
         self.pvz_combo = QComboBox()
         self.fio_combo = QComboBox()
@@ -255,16 +256,26 @@ class OrderEdit(QDialog):
         self.date2 = QDateEdit(QDate.currentDate().addDays(1))
         self.date2.setCalendarPopup(True)
         self.code_edit = QLineEdit()
-        # ⬇️ СПРАВОЧНИКИ — ЗАМЕНИТЬ НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ
-        for r in db_query("SELECT status_id, status_name FROM order_status"):
-            self.status_combo.addItem(r["status_name"], r["status_id"])
+
+        # Поля для двух артикулов и количества
+        self.article1 = QLineEdit()
+        self.qty1 = QLineEdit()
+        self.article2 = QLineEdit()
+        self.qty2 = QLineEdit()
+
+        # Загрузка справочников
+        for r in db_query("SELECT status_id, name FROM order_status"):
+            self.status_combo.addItem(r["name"], r["status_id"])
         for r in db_query("SELECT pvz_id, address FROM pvz"):
             self.pvz_combo.addItem(r["address"], r["pvz_id"])
-        for r in db_query("SELECT fio_id, fio FROM user_fio"):
-            self.fio_combo.addItem(r["fio"], r["fio_id"])
+        for r in db_query("SELECT fio_id, name FROM user_fio"):
+            self.fio_combo.addItem(r["name"], r["fio_id"])
 
         l.addRow("Номер заказа:", self.num_edit)
-        l.addRow("Артикулы:", self.art_edit)
+        l.addRow("Артикул 1:", self.article1)
+        l.addRow("Кол-во 1:", self.qty1)
+        l.addRow("Артикул 2:", self.article2)
+        l.addRow("Кол-во 2:", self.qty2)
         l.addRow("Статус:", self.status_combo)
         l.addRow("ПВЗ:", self.pvz_combo)
         l.addRow("Клиент:", self.fio_combo)
@@ -273,31 +284,9 @@ class OrderEdit(QDialog):
         l.addRow("Код получения:", self.code_edit)
 
         if order_id:
-            r = db_fetch_one("SELECT * FROM orders WHERE order_id = %s", (order_id,))
-            if r:
-                self.num_edit.setText(str(r["order_id"]))
-                self.num_edit.setReadOnly(True)
-                self.art_edit.setText(r["article_text"] or "")
-                self.code_edit.setText(str(r["pickup_code"] or ""))
-                si = self.status_combo.findData(r["status_id"])
-                if si >= 0: self.status_combo.setCurrentIndex(si)
-                pi = self.pvz_combo.findData(r["pvz_id"])
-                if pi >= 0: self.pvz_combo.setCurrentIndex(pi)
-                fi = self.fio_combo.findData(r["client_fio_id"])
-                if fi >= 0: self.fio_combo.setCurrentIndex(fi)
-                if r["order_date"]:
-                    self.date1.setDate(QDate.fromString(r["order_date"], "yyyy-MM-dd"))
-                if r["delivery_date"]:
-                    self.date2.setDate(QDate.fromString(r["delivery_date"], "yyyy-MM-dd"))
+            self.load_order_data(order_id)
         else:
-            max_num = db_fetch_one("SELECT MAX(order_id) as m FROM orders")
-            next_num = (max_num["m"] or 0) + 1 if max_num else 1
-            self.num_edit.setText(str(next_num))
-            self.num_edit.setReadOnly(True)
-            max_code = db_fetch_one("SELECT MAX(pickup_code) as m FROM orders")
-            next_code = (max_code["m"] or 900) + 1 if max_code else 901
-            self.code_edit.setText(str(next_code))
-            self.code_edit.setReadOnly(True)
+            self.set_new_order_defaults()
 
         btns = QHBoxLayout()
         save = QPushButton("Сохранить")
@@ -308,40 +297,113 @@ class OrderEdit(QDialog):
         btns.addWidget(cancel)
         l.addRow(btns)
 
+    # Загрузка данных существующего заказа
+    def load_order_data(self, order_id):
+        r = db_fetch_one("""
+            SELECT o.*, oi1.article AS a1, oi1.quantity AS q1,
+                   oi2.article AS a2, oi2.quantity AS q2
+            FROM orders o
+            LEFT JOIN order_items oi1 ON o.order_id = oi1.order_id
+            LEFT JOIN order_items oi2 ON o.order_id = oi2.order_id AND oi2.order_item_id > oi1.order_item_id
+            WHERE o.order_id = %s
+            GROUP BY o.order_id
+        """, (order_id,))
+        if r:
+            self.num_edit.setText(str(r["order_id"]))
+            self.num_edit.setReadOnly(True)
+            self.code_edit.setText(str(r["pickup_code"] or ""))
+            si = self.status_combo.findData(r["status_id"])
+            if si >= 0: self.status_combo.setCurrentIndex(si)
+            pi = self.pvz_combo.findData(r["pvz_id"])
+            if pi >= 0: self.pvz_combo.setCurrentIndex(pi)
+            fi = self.fio_combo.findData(r["client_fio_id"])
+            if fi >= 0: self.fio_combo.setCurrentIndex(fi)
+            if r["order_date"]:
+                self.date1.setDate(QDate.fromString(str(r["order_date"]), "yyyy-MM-dd"))
+            if r["delivery_date"]:
+                self.date2.setDate(QDate.fromString(str(r["delivery_date"]), "yyyy-MM-dd"))
+
+            # Загрузка позиций заказа
+            items = db_query("SELECT article, quantity FROM order_items WHERE order_id = %s ORDER BY order_item_id", (order_id,))
+            if len(items) > 0:
+                self.article1.setText(items[0]["article"])
+                self.qty1.setText(str(items[0]["quantity"]))
+            if len(items) > 1:
+                self.article2.setText(items[1]["article"])
+                self.qty2.setText(str(items[1]["quantity"]))
+
+    # Установка значений по умолчанию для нового заказа
+    def set_new_order_defaults(self):
+        max_num = db_fetch_one("SELECT MAX(order_id) as m FROM orders")
+        next_num = (max_num["m"] or 0) + 1 if max_num else 1
+        self.num_edit.setText(str(next_num))
+        self.num_edit.setReadOnly(True)
+        max_code = db_fetch_one("SELECT MAX(pickup_code) as m FROM orders")
+        next_code = (max_code["m"] or 900) + 1 if max_code else 901
+        self.code_edit.setText(str(next_code))
+        self.code_edit.setReadOnly(True)
+
+    # Сохранение заказа (добавление или обновление)
     def save(self):
         d1 = self.date1.date().toString("yyyy-MM-dd")
         d2 = self.date2.date().toString("yyyy-MM-dd")
-        if self.order_id:
-            # ⬇️ UPDATE ЗАКАЗА — ЗАМЕНИТЬ НАЗВАНИЕ ТАБЛИЦЫ И ПОЛЯ
-            db_execute("""
-                UPDATE orders SET article_text=%s, status_id=%s, pvz_id=%s,
-                client_fio_id=%s, order_date=%s, delivery_date=%s
-                WHERE order_id=%s
-            """, (
-                self.art_edit.text(), self.status_combo.currentData(),
-                self.pvz_combo.currentData(), self.fio_combo.currentData(),
-                d1, d2, self.order_id
-            ))
-        else:
-            # ⬇️ INSERT ЗАКАЗА — ЗАМЕНИТЬ НАЗВАНИЕ ТАБЛИЦЫ И ПОЛЯ
-            db_execute("""
-                INSERT INTO orders (order_id, article_text, status_id, pvz_id,
-                client_fio_id, order_date, delivery_date, pickup_code)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (
-                int(self.num_edit.text()), self.art_edit.text(),
-                self.status_combo.currentData(), self.pvz_combo.currentData(),
-                self.fio_combo.currentData(), d1, d2, int(self.code_edit.text())
-            ))
-        self.accept()
+        oid = int(self.num_edit.text())
 
+        # Проверка существования артикулов
+        for art, qty in [(self.article1.text().strip(), self.qty1.text().strip()),
+                        (self.article2.text().strip(), self.qty2.text().strip())]:
+            if art:
+                exists = db_fetch_one("SELECT article FROM tovar WHERE article = %s", (art,))
+                if not exists:
+                    QMessageBox.warning(self, "Ошибка", f"Артикул '{art}' не найден в каталоге товаров")
+                    return
+                if qty:
+                    try:
+                        int(qty)
+                    except:
+                        QMessageBox.warning(self, "Ошибка", f"Количество для артикула '{art}' должно быть числом")
+                        return
+
+        try:
+            if self.order_id:
+                db_execute("""
+                    UPDATE orders SET status_id=%s, pvz_id=%s,
+                    client_fio_id=%s, order_date=%s, delivery_date=%s
+                    WHERE order_id=%s
+                """, (
+                    self.status_combo.currentData(), self.pvz_combo.currentData(),
+                    self.fio_combo.currentData(), d1, d2, self.order_id
+                ))
+                db_execute("DELETE FROM order_items WHERE order_id = %s", (self.order_id,))
+            else:
+                db_execute("""
+                    INSERT INTO orders (order_id, status_id, pvz_id,
+                    client_fio_id, order_date, delivery_date, pickup_code)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s)
+                """, (
+                    oid, self.status_combo.currentData(), self.pvz_combo.currentData(),
+                    self.fio_combo.currentData(), d1, d2, int(self.code_edit.text())
+                ))
+
+            for art, qty in [(self.article1.text().strip(), self.qty1.text().strip()),
+                            (self.article2.text().strip(), self.qty2.text().strip())]:
+                if art and qty:
+                    db_execute("""
+                        INSERT INTO order_items (order_id, article, quantity)
+                        VALUES (%s, %s, %s)
+                    """, (oid, art, int(qty)))
+
+            self.accept()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка сохранения заказа", str(e))
+
+# Главное окно со списком товаров
 class MainWindow(QMainWindow):
     def __init__(self, user_data):
         super().__init__()
         self.uid, self.fio, self.role = user_data
         self.edit_open = False
-        # ⬇️ ЗАГОЛОВОК — ЗАМЕНИТЬ НА СВОЙ
-        self.setWindowTitle("Список товаров")
+        self.setWindowTitle("ООО «ЧитайГород» — Список книг")
         self.resize(1100, 650)
         if os.path.exists(ICON_ICO): self.setWindowIcon(QIcon(ICON_ICO))
 
@@ -349,6 +411,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(c)
         l = QVBoxLayout(c)
 
+        # Шапка с логотипом, ФИО и кнопкой выхода
         h = QHBoxLayout()
         if os.path.exists(ICON_PNG):
             logo = QLabel()
@@ -361,6 +424,7 @@ class MainWindow(QMainWindow):
         h.addWidget(btn_out)
         l.addLayout(h)
 
+        # Фильтры: поиск, производитель, сортировка
         self.fbox = QWidget()
         fb = QHBoxLayout(self.fbox)
         fb.addWidget(QLabel("Поиск:"))
@@ -371,10 +435,11 @@ class MainWindow(QMainWindow):
         fb.addWidget(self.manuf)
         fb.addWidget(QLabel("Сортировка:"))
         self.sort = QComboBox()
-        self.sort.addItems(["Нет", "Цена ↑", "Цена ↓", "Склад ↑", "Склад ↓"])
+        self.sort.addItems(["Нет", "Цена повыш", "Цена пониж", "Склад повыш", "Склад пониж"])
         fb.addWidget(self.sort)
         l.addWidget(self.fbox)
 
+        # Кнопки администратора
         self.abox = QWidget()
         ab = QHBoxLayout(self.abox)
         btn_add = QPushButton("Добавить")
@@ -388,14 +453,15 @@ class MainWindow(QMainWindow):
         self.btn_ord = QPushButton("Заказы")
         l.addWidget(self.btn_ord)
 
+        # Таблица товаров
         self.table = QTableWidget()
-        self.table.setColumnCount(8)
-        # ⬇️ ЗАГОЛОВКИ ТАБЛИЦЫ — ПОДСТРОИТЬ ПОД СВОИ ПОЛЯ
-        self.table.setHorizontalHeaderLabels(["Фото", "Артикул", "Название", "Категория", "Цена", "Скидка", "Склад", "Производитель"])
+        self.table.setColumnCount(9)
+        self.table.setHorizontalHeaderLabels(["Фото", "Артикул", "Название", "Категория", "Цена", "Цена со скидкой", "Скидка", "Склад", "Производитель"])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.doubleClicked.connect(self.on_double_click)
         l.addWidget(self.table)
 
+        # Подключение сигналов
         self.search.textChanged.connect(self.load)
         self.manuf.currentTextChanged.connect(self.load)
         self.sort.currentTextChanged.connect(self.load)
@@ -408,6 +474,7 @@ class MainWindow(QMainWindow):
         self.load_manuf()
         self.load()
 
+    # Применение видимости элементов по роли
     def apply_role(self):
         adv = self.role in ("Менеджер", "Администратор")
         adm = self.role == "Администратор"
@@ -415,26 +482,26 @@ class MainWindow(QMainWindow):
         self.abox.setVisible(adm)
         self.btn_ord.setVisible(adv)
 
-    def on_double_click(self):        
+    # Двойной клик по таблице -- редактирование только для админа
+    def on_double_click(self):
         if self.role == "Администратор":
             self.edit_product()
 
+    # Загрузка списка производителей в фильтр
     def load_manuf(self):
-        # ⬇️ ЗАГРУЗКА ПРОИЗВОДИТЕЛЕЙ — ЗАМЕНИТЬ ТАБЛИЦУ И ПОЛЕ
         self.manuf.clear()
         self.manuf.addItem("Все")
-        for r in db_query("SELECT manufacturer_name FROM manufacturers ORDER BY manufacturer_name"):
-            self.manuf.addItem(r["manufacturer_name"])
+        for r in db_query("SELECT name FROM manufacturers ORDER BY name"):
+            self.manuf.addItem(r["name"])
 
+    # Загрузка и отображение списка товаров
     def load(self):
-        # ⬇️ ГЛАВНЫЙ ЗАПРОС — ЗАМЕНИТЬ ВСЕ НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ
         q = """
             SELECT t.article, t.price, t.discount, t.stock_quantity, t.image_path,
-                p.name AS product_name,
-                c.category_name,
-                m.manufacturer_name
+                t.name AS product_name,
+                c.name,
+                m.name
             FROM tovar t
-            JOIN products p ON t.product_id = p.product_id
             JOIN categories c ON t.category_id = c.category_id
             JOIN manufacturers m ON t.manufacturer_id = m.manufacturer_id
             WHERE 1=1
@@ -442,11 +509,11 @@ class MainWindow(QMainWindow):
         params = []
         if self.search.text():
             s = f"%{self.search.text().strip()}%"
-            q += " AND (p.name LIKE %s OR m.manufacturer_name LIKE %s OR t.description LIKE %s)"
+            q += " AND (t.name LIKE %s OR m.name LIKE %s OR t.description LIKE %s)"
             params.extend([s, s, s])
         man = self.manuf.currentText()
         if man != "Все":
-            q += " AND m.manufacturer_name = %s"
+            q += " AND m.name = %s"
             params.append(man)
         sort = self.sort.currentText()
         if sort == "Цена повыш": q += " ORDER BY t.price ASC"
@@ -457,7 +524,7 @@ class MainWindow(QMainWindow):
         rows = db_query(q, params)
         self.table.setRowCount(len(rows))
         for i, r in enumerate(rows):
-            
+            # Отображение фото товара или заглушки
             img = r["image_path"] or ""
             full_path = os.path.join(PHOTOS, img) if img else ""
             if os.path.exists(full_path):
@@ -471,38 +538,50 @@ class MainWindow(QMainWindow):
 
             self.table.setItem(i, 1, QTableWidgetItem(r["article"]))
             self.table.setItem(i, 2, QTableWidgetItem(r["product_name"]))
-            self.table.setItem(i, 3, QTableWidgetItem(r["category_name"]))
+            self.table.setItem(i, 3, QTableWidgetItem(r["name"]))
             price = int(r["price"] or 0)
             disc = int(r["discount"] or 0)
             if disc > 0:
                 final = int(price * (1 - disc/100))
-                txt = f"{price} -> {final}"
+                # Старая цена
+                old = QTableWidgetItem(f"{price}")
+                old.setForeground(QColor("red"))
+                font = old.font()
+                font.setStrikeOut(True)
+                old.setFont(font)
+                self.table.setItem(i, 4, old)
+                # Новая цена
+                self.table.setItem(i, 5, QTableWidgetItem(f"{final}"))
             else:
-                txt = str(price)
-            self.table.setItem(i, 4, QTableWidgetItem(txt))
-            self.table.setItem(i, 5, QTableWidgetItem(f"{disc}%"))
-            self.table.setItem(i, 6, QTableWidgetItem(str(r["stock_quantity"] or 0)))
-            self.table.setItem(i, 7, QTableWidgetItem(r["manufacturer_name"]))
+                self.table.setItem(i, 4, QTableWidgetItem(f"{price}"))
+                self.table.setItem(i, 5, QTableWidgetItem(""))
+            self.table.setItem(i, 6, QTableWidgetItem(f"{disc}%"))
+            self.table.setItem(i, 7, QTableWidgetItem(str(r["stock_quantity"] or 0)))
+            self.table.setItem(i, 8, QTableWidgetItem(r["name"]))
 
+            # Подсветка строк по условиям
             color = QColor(C_WHITE)
             stock = int(r["stock_quantity"] or 0)
             if stock == 0: color = QColor(C_ZERO)
-            elif disc > 12: color = QColor(C_DISC)
-            for j in range(8):
+            elif disc > 25: color = QColor(C_DISC)
+            for j in range(9):
                 if self.table.item(i, j):
                     self.table.item(i, j).setBackground(color)
 
+    # Получение артикула выбранной строки
     def sel_article(self):
         r = self.table.currentRow()
         if r < 0: return None
         return self.table.item(r, 1).text()
 
+    # Добавление нового товара
     def add_product(self):
         if self.edit_open: return
         self.edit_open = True
         if ProductEdit().exec(): self.load()
         self.edit_open = False
 
+    # Редактирование выбранного товара
     def edit_product(self):
         art = self.sel_article()
         if not art or self.edit_open: return
@@ -510,23 +589,24 @@ class MainWindow(QMainWindow):
         if ProductEdit(art).exec(): self.load()
         self.edit_open = False
 
+    # Удаление товара с проверкой на наличие в заказах
     def delete_product(self):
         art = self.sel_article()
         if not art: return
-        # ⬇️ ПРОВЕРКА ЗАКАЗОВ — ЗАМЕНИТЬ ТАБЛИЦУ И ПОЛЕ
-        cnt = db_fetch_one("SELECT COUNT(*) as c FROM orders WHERE article_text LIKE %s", (f"%{art}%",))
+        cnt = db_fetch_one("SELECT COUNT(*) as c FROM order_items WHERE article = %s", (art,))
         if cnt and cnt["c"] > 0:
-            QMessageBox.warning(self, "Ошибка", "Товар в заказах — нельзя удалить")
+            QMessageBox.warning(self, "Ошибка", "Товар в заказах -- нельзя удалить")
             return
-         # ⬇️ УДАЛЕНИЕ — ЗАМЕНИТЬ ТАБЛИЦУ И ПОЛЕ
         if QMessageBox.question(self, "?", "Удалить?") == QMessageBox.StandardButton.Yes:
             db_execute("DELETE FROM tovar WHERE article = %s", (art,))
             self.load()
 
+    # Открытие окна заказов
     def show_orders(self):
         dlg = OrdersWindow(self.role)
         dlg.exec()
 
+    # Выход из учётной записи и возврат к окну входа
     def logout(self):
         self.close()
         login = LoginDialog()
@@ -534,6 +614,7 @@ class MainWindow(QMainWindow):
             self.next_window = MainWindow(login.user_data)
             self.next_window.show()
 
+# Окно просмотра заказов
 class OrdersWindow(QDialog):
     def __init__(self, role):
         super().__init__()
@@ -544,11 +625,12 @@ class OrdersWindow(QDialog):
         l = QVBoxLayout(self)
         self.table = QTableWidget()
         self.table.setColumnCount(7)
-         # ⬇️ ЗАГОЛОВКИ ТАБЛИЦЫ ЗАКАЗОВ
-        self.table.setHorizontalHeaderLabels(["Номер", "Артикулы", "Статус", "ПВЗ", "Клиент", "Дата заказа", "Дата доставки"])
+        self.table.setHorizontalHeaderLabels(["Номер", "Состав", "Статус", "ПВЗ", "Клиент", "Дата заказа", "Дата доставки"])
         self.table.doubleClicked.connect(self.on_double_click)
         l.addWidget(self.table)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
+        # Кнопки доступны только администратору
         adm = self.role == "Администратор"
         btns = QHBoxLayout()
         if adm:
@@ -568,53 +650,65 @@ class OrdersWindow(QDialog):
 
         self.load()
 
+    # Загрузка списка заказов с группировкой позиций
     def load(self):
-        # ⬇️ ЗАПРОС ЗАКАЗОВ — ЗАМЕНИТЬ НАЗВАНИЯ ТАБЛИЦ И ПОЛЕЙ
         rows = db_query("""
-            SELECT o.order_id, o.article_text, os.status_name,
-                   p.address AS pvz_address, uf.fio, o.order_date, o.delivery_date
+            SELECT o.order_id,
+                GROUP_CONCAT(CONCAT(oi.article, ' (', oi.quantity, ')') SEPARATOR ', ') AS items,
+                os.name,
+                p.address AS pvz_address,
+                uf.name AS fio,
+                o.order_date,
+                o.delivery_date
             FROM orders o
             JOIN order_status os ON o.status_id = os.status_id
             JOIN pvz p ON o.pvz_id = p.pvz_id
             LEFT JOIN user_fio uf ON o.client_fio_id = uf.fio_id
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            GROUP BY o.order_id
             ORDER BY o.order_id
         """)
         self.table.setRowCount(len(rows))
         for i, r in enumerate(rows):
             self.table.setItem(i, 0, QTableWidgetItem(str(r["order_id"])))
-            self.table.setItem(i, 1, QTableWidgetItem(r["article_text"] or ""))
-            self.table.setItem(i, 2, QTableWidgetItem(r["status_name"] or ""))
+            self.table.setItem(i, 1, QTableWidgetItem(r["items"] or ""))
+            self.table.setItem(i, 2, QTableWidgetItem(r["name"] or ""))
             self.table.setItem(i, 3, QTableWidgetItem(r["pvz_address"] or ""))
             self.table.setItem(i, 4, QTableWidgetItem(r["fio"] or ""))
-            self.table.setItem(i, 5, QTableWidgetItem(r["order_date"] or ""))
-            self.table.setItem(i, 6, QTableWidgetItem(r["delivery_date"] or ""))
+            self.table.setItem(i, 5, QTableWidgetItem(str(r["order_date"] or "")))
+            self.table.setItem(i, 6, QTableWidgetItem(str(r["delivery_date"] or "")))
 
+    # Двойной клик -- редактирование только для админа
     def on_double_click(self):
         if self.role == "Администратор":
             self.edit_order()
 
+    # Получение ID выбранного заказа
     def sel_id(self):
         r = self.table.currentRow()
         if r < 0: return None
         return int(self.table.item(r, 0).text())
 
+    # Добавление нового заказа
     def add_order(self):
         if OrderEdit().exec(): self.load()
 
+    # Редактирование выбранного заказа
     def edit_order(self):
         oid = self.sel_id()
         if oid and OrderEdit(oid).exec(): self.load()
 
+    # Удаление заказа
     def delete_order(self):
         oid = self.sel_id()
-        # ⬇️ УДАЛЕНИЕ ЗАКАЗА — ЗАМЕНИТЬ ТАБЛИЦУ И ПОЛЕ
         if oid and QMessageBox.question(self, "?", "Удалить?") == QMessageBox.StandardButton.Yes:
             db_execute("DELETE FROM orders WHERE order_id = %s", (oid,))
             self.load()
 
+# Точка входа в приложение
 def main():
     app = QApplication(sys.argv)
-    app.setFont(QFont("Calibri", 11))
+    app.setFont(QFont("Comic Sans MS", 11))
 
     login = LoginDialog()
     if login.exec() != QDialog.DialogCode.Accepted:

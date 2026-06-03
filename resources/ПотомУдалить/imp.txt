@@ -1,0 +1,169 @@
+Шаг 1. Создать БД (30 мин)
+1.1 Запустить XAMPP → Start MySQL
+1.2 Открыть phpMyAdmin → Создать БД
+text
+Имя: bookstore
+Кодировка: utf8_general_ci
+1.3 Создать таблицы
+Выполнить SQL-файл, который мы подготовили (все таблицы с данными).
+
+1.4 Импорт CSV (если не через SQL)
+Настройки:
+
+Кодировка: utf-8
+
+Разделитель: ;
+
+Обрамление: "
+
+Пропустить первую строку: да
+
+Шаг 2. Подключение к БД (10 мин)
+2.1 Файл db.py
+python
+import mysql.connector
+
+DB_CONFIG = {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "",
+    "database": "bookstore",
+    "charset": "utf8",
+    "use_pure": True,
+}
+
+def get_connection():
+    return mysql.connector.connect(**DB_CONFIG)
+2.2 Проверка check_db.py
+python
+from db import get_connection
+
+conn = get_connection()
+cur = conn.cursor(dictionary=True)
+cur.execute("SELECT * FROM users LIMIT 1")
+print(cur.fetchone())
+conn.close()
+bash
+python check_db.py
+Шаг 3. Код приложения
+3.1 Установка зависимостей
+bash
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install mysql-connector-python PyQt6 pyinstaller Pillow
+pip freeze > requirements.txt
+3.2 Структура main.py
+text
+# 1. Импорты
+# 2. Константы (пути, цвета)
+# 3. Функции для БД (db_query, db_execute)
+# 4. LoginDialog (вход)
+# 5. ProductEdit (CRUD товара)
+# 6. OrderEdit (CRUD заказа)
+# 7. MainWindow (список товаров)
+# 8. OrdersWindow (список заказов)
+# 9. main() (запуск)
+3.3 Что адаптировать под "ЧитайГород"
+Что	Значение
+Названия таблиц	tovar, users, user_fio, user_roles, categories, manufacturers, suppliers, unit, orders, order_items, order_status, pvz
+Цвета	#FFFFFF, #ABCFCE, #546F94, #23E1EF, #ADD8E6
+Заголовок	ООО «ЧитайГород» — Список книг
+Шрифт	Comic Sans MS
+Скидка	> 25% → голубой #23E1EF
+3.4 Ключевые SQL-запросы
+Товары:
+
+sql
+SELECT t.article, t.price, t.discount, t.stock_quantity, t.image_path,
+    t.name AS product_name,
+    c.category_name,
+    m.manufacturer_name
+FROM tovar t
+JOIN categories c ON t.category_id = c.category_id
+JOIN manufacturers m ON t.manufacturer_id = m.manufacturer_id
+Пользователи:
+
+sql
+SELECT u.user_id, uf.name AS fio, ur.name AS role
+FROM users u
+JOIN user_fio uf ON u.fio = uf.fio_id
+JOIN user_roles ur ON u.role = ur.role_id
+WHERE u.login = %s AND u.password = %s
+Заказы:
+
+sql
+SELECT o.order_id,
+    GROUP_CONCAT(CONCAT(oi.article, ' (', oi.quantity, ')') SEPARATOR ', ') AS items,
+    os.status_name,
+    p.address AS pvz_address,
+    uf.name AS fio,
+    o.order_date,
+    o.delivery_date
+FROM orders o
+JOIN order_status os ON o.status_id = os.status_id
+JOIN pvz p ON o.pvz_id = p.pvz_id
+LEFT JOIN user_fio uf ON o.client_fio_id = uf.fio_id
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+GROUP BY o.order_id
+ORDER BY o.order_id
+Шаг 4. Проверка приложения
+Вход как гость
+
+Вход как админ: 94d5ous@gmail.com / uzWC67
+
+Вход как менеджер: ptec8ym@yahoo.com / LdNyos
+
+Вход как клиент: yzls62@outlook.com / JlFRCZ
+
+Список товаров (фото, цвета)
+
+Поиск работает
+
+Фильтр по производителю работает
+
+Сортировка работает
+
+Добавить товар
+
+Редактировать товар
+
+Удалить товар (если нет в заказах)
+
+Заказы открываются
+
+Добавить/редактировать/удалить заказ
+
+Выход возвращает на окно входа
+
+Шаг 5. Финальные файлы
+5.1 ER-диаграмма
+phpMyAdmin → Дизайнер → Экспорт в PDF
+
+5.2 Дамп БД
+phpMyAdmin → Экспорт → SQL → sql/bookstore.sql
+
+5.3 Блок-схема
+Блоки: Начало → Вход → Проверка роли → Список книг → CRUD → Выход
+
+5.4 EXE
+bash
+pyinstaller --noconfirm --windowed --onefile --name "ChitaiGorod" --icon resources\Icon.ico --add-data "resources;resources" --collect-all mysql.connector main.py
+5.5 Скриншоты
+Вставить в docs/report.docx:
+
+Окно входа
+
+Список книг (гость)
+
+Список книг (админ)
+
+Добавление книги
+
+Окно заказов
+
+5.6 Git
+bash
+git init
+git add .
+git commit -m "Финальная версия ЧитайГород"

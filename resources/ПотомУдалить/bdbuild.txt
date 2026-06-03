@@ -1,0 +1,415 @@
+CREATE DATABASE IF NOT EXISTS bookstore
+CHARACTER SET utf8
+COLLATE utf8_general_ci;
+
+USE bookstore;
+
+SET NAMES utf8;
+
+-- ============================================
+-- Роли
+-- ============================================
+CREATE TABLE user_roles (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(23) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO user_roles (role_id, name) VALUES
+(1, 'Администратор'),
+(2, 'Менеджер'),
+(3, 'Авторизированный клиент');
+
+-- ============================================
+-- ФИО
+-- ============================================
+CREATE TABLE user_fio (
+    fio_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO user_fio (fio_id, name) VALUES
+(1, 'Никифорова Анна Семеновна'),
+(2, 'Стелина Евгения Петровна'),
+(3, 'Михайлюк Анна Вячеславовна'),
+(4, 'Ситдикова Елена Анатольевна'),
+(5, 'Ворсин Петр Евгеньевич'),
+(6, 'Старикова Елена Павловна'),
+(7, 'Никифорова Весения Николаевна'),
+(8, 'Сазонов Руслан Германович'),
+(9, 'Одинцов Серафим Артёмович'),
+(10, 'Степанов Михаил Артёмович');
+
+-- ============================================
+-- Пользователи
+-- ============================================
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    role INT NOT NULL,
+    fio INT NOT NULL,
+    login VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(10) NOT NULL,
+    FOREIGN KEY (role) REFERENCES user_roles(role_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (fio) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO users (user_id, role, fio, login, password) VALUES
+(1, 1, 1, '94d5ous@gmail.com', 'uzWC67'),
+(2, 1, 2, 'uth4iz@mail.com', '2L6KZG'),
+(3, 1, 3, '5d4zbu@tutanota.com', 'rwVDh9'),
+(4, 2, 4, 'ptec8ym@yahoo.com', 'LdNyos'),
+(5, 2, 5, '1qz4kw@mail.com', 'gynQMT'),
+(6, 2, 6, '4np6se@mail.com', 'AtnDjr'),
+(7, 3, 7, 'yzls62@outlook.com', 'JlFRCZ'),
+(8, 3, 8, '1diph5e@tutanota.com', '8ntwUp'),
+(9, 3, 9, 'tjde7c@yahoo.com', 'YOyhfR'),
+(10, 3, 10, 'wpmrc3do@tutanota.com', 'RSbvHv'),
+(11, 1, 1, '1@yahoo.com', '1'),
+(12, 2, 4, '2@yahoo.com', '2'),
+(13, 3, 10, '3@yahoo.com', '3');
+
+-- ============================================
+-- Категории
+-- ============================================
+CREATE TABLE categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO categories (category_id, name) VALUES
+(1, 'Художественная литература'),
+(2, 'Учебник для вузов'),
+(3, 'Хрестоматия'),
+(4, 'Учебное пособие');
+
+-- ============================================
+-- Производители (издательства)
+-- ============================================
+CREATE TABLE manufacturers (
+    manufacturer_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO manufacturers (manufacturer_id, name) VALUES
+(1, 'Яуза'),
+(2, 'Т8 Издательские технологии'),
+(3, 'Прогресс книга'),
+(4, 'Время'),
+(5, 'Лениздат'),
+(6, 'Неолит'),
+(7, 'Амрита-Русь'),
+(8, 'Златоуст'),
+(9, 'Аспект Пресс'),
+(10, 'ВКН');
+
+-- ============================================
+-- Поставщики (авторы)
+-- ============================================
+CREATE TABLE suppliers (
+    supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO suppliers (supplier_id, name) VALUES
+(1, 'Виктор Астафьев'),
+(2, 'Гилберт Кит Честертон'),
+(3, 'Кирилл Каланджи'),
+(4, 'Людмила Улицкая'),
+(5, 'Аркадий Гайдар'),
+(6, 'Юрий Родичев'),
+(7, 'Дэниел Джей Барретт'),
+(8, 'Шон Кэрролл'),
+(9, 'Яков Гордин'),
+(10, 'Иосиф Бродский'),
+(11, 'Янь Чуннянь'),
+(12, 'Дмитрий Мережковский'),
+(13, 'Дмитрий Щербаков'),
+(14, 'Роджер Осборн, Дэн Стерджис'),
+(15, 'Любовь Беликова, Инна Ерофеева, Татьяна Шутова'),
+(16, 'Сергей Моргачев'),
+(17, 'Екатерина Габарта, Ирина Игнатьева'),
+(18, 'Татьяна Лопаткина, Софья Маннапова');
+
+-- ============================================
+-- Единицы измерения
+-- ============================================
+CREATE TABLE unit (
+    unit_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(5) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO unit (unit_id, name) VALUES (1, 'шт.');
+
+-- ============================================
+-- Товары (книги)
+-- ============================================
+CREATE TABLE tovar (
+    article VARCHAR(6) NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    unit_id INT NOT NULL DEFAULT 1,
+    price INT NOT NULL,
+    supplier_id INT NOT NULL,
+    manufacturer_id INT NOT NULL,
+    category_id INT NOT NULL,
+    discount INT DEFAULT 0,
+    stock_quantity INT DEFAULT 0,
+    description VARCHAR(500),
+    image_path VARCHAR(200),
+    FOREIGN KEY (unit_id) REFERENCES unit(unit_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(manufacturer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO tovar (article, name, unit_id, price, supplier_id, manufacturer_id, category_id, discount, stock_quantity, description, image_path) VALUES
+('А112Т4', 'Прокляты и убиты', 1, 585, 1, 1, 1, 25, 6, 'Роман-эпопею "Прокляты и убиты" Виктора Астафьева по праву считают одним из самых сильных и пронзительных произведений отечественной военной прозы.', '1.jpg'),
+('G843H5', 'Тайны и загадки отца Брауна', 1, 193, 2, 1, 1, 30, 9, 'Гилберт Кит Честертон — признанный классик английской литературы, один из самых ярких писателей первой половины XX века.', '2.jpg'),
+('D325D4', 'Девайс', 1, 1599, 3, 2, 1, 5, 12, 'Молодой фрилансер Захар Скаро устраивается на очередную подработку.', '3.jpg'),
+('S432T5', 'Необыкновенное обыкновенное чудо. Школьные истории', 1, 549, 4, 2, 1, 15, 15, '', '4.jpg'),
+('F325D4', 'Чук и Гек', 1, 209, 5, 2, 1, 18, 3, 'В книгу вошли повести и рассказы Аркадия Петровича Гайдара: "Чук и Гек", "Горячий камень" и "Сказка о военной тайне..."', '5.jpg'),
+('G432G6', 'Информационная безопасность. Национальные стандарты Российской Федерации. 3-е издание. Учебное пособие', 1, 3899, 6, 3, 2, 22, 3, 'В учебном пособии рассмотрено более 300 действующих открытых документов национальной системы стандартизации.', '6.jpg'),
+('H542F5', 'Linux. Командная строка. Лучшие практики', 1, 1799, 7, 3, 2, 4, 5, 'Перейдите на новый уровень работы в Linux!', '7.jpg'),
+('C346F5', 'Квантовые миры и возникновение пространства-времени', 1, 1349, 8, 3, 2, 5, 4, 'Шон Кэрролл — физик-теоретик и один из самых известных в мире популяризаторов науки.', '8.jpg'),
+('F256G6', 'Вселенная. Происхождение жизни, смысл нашего существования и огромный космос', 1, 1799, 8, 3, 2, 6, 2, 'Знаменитый физик Шон Кэрролл в свойственной ему увлекательной манере объясняет принципы.', ''),
+('J532V5', 'Пушкин. Бродский. Империя и судьба. В 2-х томах (комплект из 2-х книг)', 1, 529, 9, 4, 3, 8, 6, 'Первая книга двухтомника «Пушкин. Бродский. Империя и судьба» пронизана пушкинской темой.', '10.jpg'),
+('G643F4', 'Иосиф Бродский. Избранные эссе (комплект из 6-ти книг)', 1, 4925, 10, 5, 3, 2, 24, 'Шесть сборников избранных эссе Иосифа Бродского (1940-1996).', '11.jpg'),
+('J326V5', 'Тысячелетие императорской керамики', 1, 2599, 11, 5, 3, 5, 4, 'Фарфор стал величайшим символом китайской культуры.', '12.jpg'),
+('J632F6', 'Вечные спутники: Портреты из всемирной литературы', 1, 1599, 12, 5, 3, 0, 6, 'Книга "Вечные спутники" - это цикл критических очерков о культуре и великих литераторах.', '13.jpg'),
+('G632H6', 'Формирование литературной репутации Н.Г.Чернышевского в ХIX-XXI веках', 1, 1349, 13, 6, 3, 2, 8, 'Монография Д. А. Щербакова - новаторская.', '14.jpg'),
+('M642E5', 'Теория искусства. Краткий путеводитель', 1, 879, 14, 6, 3, 3, 2, '', '15.jpg'),
+('G543F5', 'Религиозные верования с древнейших времен до наших дней', 1, 879, 13, 7, 3, 4, 6, 'Настоящее издание представляет собой сборник переводов лекций по истории религий.', '16.jpg'),
+('B653G6', 'Русский язык: Первые шаги. Часть 3. Учебное пособие', 1, 2699, 15, 8, 4, 8, 9, 'Пособие является завершающей частью учебного комплекса.', '17.jpg'),
+('J735J7', 'Синтетический образ индивидуального психического мира', 1, 1099, 16, 8, 3, 9, 4, 'Психика подобна определенным объектам.', '18.jpg'),
+('H436H7', 'Английский язык в спорте: Учебное пособие', 1, 1999, 17, 9, 4, 2, 0, 'Учебное пособие подготовлено для слушателей, изучающих английский язык как язык специальности.', '19.jpg'),
+('H475R5', 'Лексика и грамматика современного китайского языка', 1, 608, 18, 10, 4, 25, 12, 'Пособие выступает дополнением ко второму тому учебника «Новый практический курс китайского языка».', '20.jpg');
+
+-- ============================================
+-- Статусы заказов
+-- ============================================
+CREATE TABLE order_status (
+    status_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO order_status (status_id, name) VALUES
+(1, 'Завершен'),
+(2, 'Новый');
+
+-- ============================================
+-- ПВЗ
+-- ============================================
+CREATE TABLE pvz (
+    pvz_id INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO pvz (pvz_id, address) VALUES
+(1, '420151, г. Лесной, ул. Вишневая, 32'),
+(2, '125061, г. Лесной, ул. Подгорная, 8'),
+(3, '630370, г. Лесной, ул. Шоссейная, 24'),
+(4, '400562, г. Лесной, ул. Зеленая, 32'),
+(5, '614510, г. Лесной, ул. Маяковского, 47'),
+(6, '410542, г. Лесной, ул. Светлая, 46'),
+(7, '620839, г. Лесной, ул. Цветочная, 8'),
+(8, '443890, г. Лесной, ул. Коммунистическая, 1'),
+(9, '603379, г. Лесной, ул. Спортивная, 46'),
+(10, '603721, г. Лесной, ул. Гоголя, 41'),
+(11, '410172, г. Лесной, ул. Северная, 13'),
+(12, '614611, г. Лесной, ул. Молодежная, 50'),
+(13, '454311, г.Лесной, ул. Новая, 19'),
+(14, '660007, г.Лесной, ул. Октябрьская, 19'),
+(15, '603036, г. Лесной, ул. Садовая, 4'),
+(16, '394060, г.Лесной, ул. Фрунзе, 43'),
+(17, '410661, г. Лесной, ул. Школьная, 50'),
+(18, '625590, г. Лесной, ул. Коммунистическая, 20'),
+(19, '625683, г. Лесной, ул. 8 Марта'),
+(20, '450983, г.Лесной, ул. Комсомольская, 26'),
+(21, '394782, г. Лесной, ул. Чехова, 3'),
+(22, '603002, г. Лесной, ул. Дзержинского, 28'),
+(23, '450558, г. Лесной, ул. Набережная, 30'),
+(24, '344288, г. Лесной, ул. Чехова, 1'),
+(25, '614164, г.Лесной,  ул. Степная, 30'),
+(26, '394242, г. Лесной, ул. Коммунистическая, 43'),
+(27, '660540, г. Лесной, ул. Солнечная, 25'),
+(28, '125837, г. Лесной, ул. Шоссейная, 40'),
+(29, '125703, г. Лесной, ул. Партизанская, 49'),
+(30, '625283, г. Лесной, ул. Победы, 46'),
+(31, '614753, г. Лесной, ул. Полевая, 35'),
+(32, '426030, г. Лесной, ул. Маяковского, 44'),
+(33, '450375, г. Лесной ул. Клубная, 44'),
+(34, '625560, г. Лесной, ул. Некрасова, 12'),
+(35, '630201, г. Лесной, ул. Комсомольская, 17'),
+(36, '190949, г. Лесной, ул. Мичурина, 26');
+
+-- ============================================
+-- Заказы
+-- ============================================
+CREATE TABLE orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_date DATE,
+    delivery_date DATE,
+    pvz_id INT NOT NULL,
+    client_fio_id INT,
+    pickup_code INT,
+    status_id INT NOT NULL,
+    FOREIGN KEY (pvz_id) REFERENCES pvz(pvz_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (client_fio_id) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (status_id) REFERENCES order_status(status_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO orders (order_id, order_date, delivery_date, pvz_id, client_fio_id, pickup_code, status_id) VALUES
+(1, '2024-02-27', '2024-04-20', 1, 10, 901, 1),
+(2, '2023-09-28', '2024-04-21', 11, 7, 902, 1),
+(3, '2024-03-21', '2024-04-22', 2, 8, 903, 1),
+(4, '2024-02-20', '2024-04-23', 11, 9, 904, 1),
+(5, '2024-03-17', '2024-04-24', 2, 10, 905, 1),
+(6, '2024-03-01', '2024-04-25', 15, 7, 906, 1),
+(7, '2024-02-28', '2024-04-26', 3, 8, 907, 1),
+(8, '2024-03-31', '2024-04-27', 19, 9, 908, 2),
+(9, '2024-04-02', '2024-04-28', 5, 10, 909, 2),
+(10, '2024-04-03', '2024-04-29', 19, 10, 910, 2);
+
+-- ============================================
+-- Состав заказов (3НФ)
+-- ============================================
+CREATE TABLE order_items (
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    article VARCHAR(6) NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (article) REFERENCES tovar(article) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO order_items (order_item_id, order_id, article, quantity) VALUES
+(1, 1, 'А112Т4', 2),
+(2, 1, 'G843H5', 2),
+(3, 2, 'G843H5', 1),
+(4, 2, 'А112Т4', 1),
+(5, 3, 'D325D4', 10),
+(6, 3, 'S432T5', 10),
+(7, 4, 'F325D4', 5),
+(8, 4, 'D325D4', 4),
+(9, 5, 'G432G6', 20),
+(10, 5, 'H542F5', 20),
+(11, 6, 'А112Т4', 2),
+(12, 6, 'G843H5', 2),
+(13, 7, 'C346F5', 3),
+(14, 7, 'F256G6', 3),
+(15, 8, 'F325D4', 1),
+(16, 8, 'G432G6', 1),
+(17, 9, 'J532V5', 5),
+(18, 9, 'F256G6', 1),
+(19, 10, 'F256G6', 5),
+(20, 10, 'J532V5', 5);
+
+
+
+CREATE DATABASE IF NOT EXISTS bookstore
+CHARACTER SET utf8
+COLLATE utf8_general_ci;
+
+USE bookstore;
+
+SET NAMES utf8;
+
+-- Роли
+CREATE TABLE user_roles (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(23) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ФИО
+CREATE TABLE user_fio (
+    fio_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Пользователи
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    role INT NOT NULL,
+    fio INT NOT NULL,
+    login VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(10) NOT NULL,
+    FOREIGN KEY (role) REFERENCES user_roles(role_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (fio) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Категории
+CREATE TABLE categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Производители (издательства)
+CREATE TABLE manufacturers (
+    manufacturer_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Поставщики (авторы)
+CREATE TABLE suppliers (
+    supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Единицы измерения
+CREATE TABLE unit (
+    unit_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(5) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Товары (книги)
+CREATE TABLE tovar (
+    article VARCHAR(6) NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    unit_id INT NOT NULL DEFAULT 1,
+    price INT NOT NULL,
+    supplier_id INT NOT NULL,
+    manufacturer_id INT NOT NULL,
+    category_id INT NOT NULL,
+    discount INT DEFAULT 0,
+    stock_quantity INT DEFAULT 0,
+    description VARCHAR(500),
+    image_path VARCHAR(200),
+    FOREIGN KEY (unit_id) REFERENCES unit(unit_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(manufacturer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Статусы заказов
+CREATE TABLE order_status (
+    status_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ПВЗ
+CREATE TABLE pvz (
+    pvz_id INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Заказы
+CREATE TABLE orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_date DATE,
+    delivery_date DATE,
+    pvz_id INT NOT NULL,
+    client_fio_id INT,
+    pickup_code INT,
+    status_id INT NOT NULL,
+    FOREIGN KEY (pvz_id) REFERENCES pvz(pvz_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (client_fio_id) REFERENCES user_fio(fio_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (status_id) REFERENCES order_status(status_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Состав заказов (3НФ)
+CREATE TABLE order_items (
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    article VARCHAR(6) NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (article) REFERENCES tovar(article) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

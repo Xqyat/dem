@@ -5,7 +5,7 @@ DB_CONFIG = {
     "port": 3306,
     "user": "root",
     "password": "",
-    "database": "dem",
+    "database": "chitaigorod",
     "use_unicode": True,
     "charset": "utf8mb4",
     "use_pure": True,

@@ -1,0 +1,105 @@
+1. ТАБЛИЦЫ (создать в БД)
+text
+users - пользователи
+user_fio - ФИО
+user_roles - роли
+tovar - товары (книги)
+categories - категории
+manufacturers - производители (издательства)
+suppliers - поставщики (авторы)
+unit - единицы измерения
+orders - заказы
+order_items - состав заказа (3НФ)
+order_status - статусы заказов
+pvz - пункты выдачи
+2. ТАБЛИЦА users
+text
+user_id - INT - PK - ID пользователя
+login - VARCHAR - логин
+password - VARCHAR - пароль
+role - INT - FK -> user_roles.role_id
+fio - INT - FK -> user_fio.fio_id
+3. ТАБЛИЦА user_fio
+text
+fio_id - INT - PK
+name - VARCHAR - ФИО
+4. ТАБЛИЦА user_roles
+text
+role_id - INT - PK
+name - VARCHAR - название роли
+5. ТАБЛИЦА tovar (главная таблица товаров)
+text
+article - VARCHAR(6) - PK - артикул
+name - VARCHAR - название книги
+category_id - INT - FK -> categories.category_id
+manufacturer_id - INT - FK -> manufacturers.manufacturer_id
+supplier_id - INT - FK -> suppliers.supplier_id
+unit_id - INT - FK -> unit.unit_id
+price - INT - цена
+discount - INT - скидка %
+stock_quantity - INT - количество на складе
+description - VARCHAR - описание
+image_path - VARCHAR - путь к фото
+6. ТАБЛИЦА categories
+text
+category_id - INT - PK
+name - VARCHAR - название категории
+7. ТАБЛИЦА manufacturers
+text
+manufacturer_id - INT - PK
+name - VARCHAR - название издательства
+8. ТАБЛИЦА suppliers
+text
+supplier_id - INT - PK
+name - VARCHAR - автор
+9. ТАБЛИЦА unit
+text
+unit_id - INT - PK
+name - VARCHAR - единица измерения
+10. ТАБЛИЦА orders
+text
+order_id - INT - PK - номер заказа
+status_id - INT - FK -> order_status.status_id
+pvz_id - INT - FK -> pvz.pvz_id
+client_fio_id - INT - FK -> user_fio.fio_id
+order_date - DATE - дата заказа
+delivery_date - DATE - дата доставки
+pickup_code - INT - код получения
+11. ТАБЛИЦА order_items (состав заказа)
+text
+order_item_id - INT - PK
+order_id - INT - FK -> orders.order_id
+article - VARCHAR(6) - FK -> tovar.article
+quantity - INT - количество
+12. ТАБЛИЦА order_status
+text
+status_id - INT - PK
+name - VARCHAR - название статуса
+13. ТАБЛИЦА pvz
+text
+pvz_id - INT - PK
+address - VARCHAR - адрес
+14. ЦВЕТА
+python
+C_WHITE = "#FFFFFF"    # основной фон
+C_SECOND = "#ABCFCE"   # дополнительный фон
+C_ACCENT = "#546F94"   # акцент
+C_DISC = "#23E1EF"     # скидка >25%
+C_ZERO = "#BABABA"     # нет на складе (серый)
+15. ПРОВЕРКА БД (SQL-запросы)
+sql
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM tovar;
+SELECT COUNT(*) FROM categories;
+SELECT COUNT(*) FROM manufacturers;
+SELECT COUNT(*) FROM suppliers;
+SELECT COUNT(*) FROM orders;
+SELECT COUNT(*) FROM order_items;
+SELECT COUNT(*) FROM order_status;
+SELECT COUNT(*) FROM pvz;
+
+-- Проверить пользователей для входа
+SELECT u.login, u.password, uf.name AS fio, ur.name AS role
+FROM users u
+JOIN user_fio uf ON u.fio = uf.fio_id
+JOIN user_roles ur ON u.role = ur.role_id;
